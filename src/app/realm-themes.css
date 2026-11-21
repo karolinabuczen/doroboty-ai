@@ -561,6 +561,13 @@ html[data-theme="hollow"][data-frame="gold"] :is(button, a[class*="group/button"
   box-shadow: 0 0 0 1px var(--gold), 0 0 18px #d4b06277;
   border-color: var(--gold);
 }
+/* Hover on text links, everywhere: no highlight box or outline, the text just gets slightly darker */
+html[data-theme="hollow"][data-frame="gold"] a:not([class*="group/button"], .pp-job-card, [aria-current="page"]):hover {
+  background-color: transparent;
+  box-shadow: none;
+  outline: none;
+  filter: brightness(0.85);
+}
 /* Pressed: sinks slightly and dims the glow */
 html[data-theme="hollow"][data-frame="gold"] :is(button, a[class*="group/button"], [role="button"], [data-slot="button"]):active:not(:disabled) {
   transform: translateY(1px);
