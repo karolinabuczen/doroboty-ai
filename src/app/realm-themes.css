@@ -603,9 +603,7 @@ html[data-theme="hollow"][data-frame="gold"] [data-slot="dialog-overlay"] {
   background: #06142bb3;
   backdrop-filter: blur(3px);
 }
-/* Motion: gentle hero float; off for reduced motion */
-@keyframes realm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-html[data-theme="hollow"][data-frame="gold"] .hero-dragon { animation: realm-float 8s ease-in-out infinite; }
+/* Motion: none on the hero picture (it stays still); transitions off for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   html[data-theme="hollow"][data-frame="gold"] *,
   html[data-theme="hollow"][data-frame="gold"] *::before,
