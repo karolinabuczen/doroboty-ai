@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { JobCard } from "@/features/jobs/job-card";
 import { usePrototype } from "./store";
@@ -37,10 +36,7 @@ export default function HomePage() {
       <section className="home-intro bg-muted/25 shadow-[var(--gui-divider-bottom-shadow)]">
         <div className="mx-auto grid max-w-[1360px] gap-12 px-5 py-16 lg:grid-cols-[1.3fr_0.7fr] lg:px-8 lg:py-24">
           <div>
-            <Badge variant="secondary" className="px-3 py-1 text-xs">
-              Dobra robota. Z AI w środku.
-            </Badge>
-            <h1 className="mt-6 max-w-4xl text-5xl leading-[var(--gui-leading-xxl)] font-semibold tracking-[var(--gui-tracking-xs)] sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-4xl text-5xl leading-[var(--gui-leading-xxl)] font-semibold tracking-[var(--gui-tracking-xs)] sm:text-6xl lg:text-7xl">
               <span className="realm-off">Praca dla ludzi, którzy dowożą z AI.</span>
               <span className="realm-on">Zostań bohaterem własnej historii z pomocą AI</span>
             </h1>
@@ -66,17 +62,13 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto max-w-[1360px] px-5 py-16 lg:px-8 lg:py-20">
-        <p className="text-xs font-medium tracking-[var(--gui-tracking-xl)] text-muted-foreground">
-          Trzy sposoby pracy z AI
-        </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-4xl">
+        <h2 className="text-3xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-4xl">
           Build. Apply. Lead.
         </h2>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {categories.map((category, index) => (
+          {categories.map((category) => (
             <article key={category.slug} className="prototype-panel">
-              <span className="text-xs font-medium text-muted-foreground">0{index + 1}</span>
-              <h3 className="mt-3 text-xl font-semibold">{category.label}</h3>
+              <h3 className="text-xl font-semibold">{category.label}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {category.description}
               </p>
@@ -95,10 +87,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1360px] px-5 py-16 lg:px-8 lg:py-20">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div>
-              <p className="text-xs font-medium tracking-[var(--gui-tracking-xl)] text-muted-foreground">
-                Aktualne role
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-4xl">
+              <h2 className="text-3xl font-semibold tracking-[var(--gui-tracking-s)] sm:text-4xl">
                 Najnowsze oferty
               </h2>
             </div>
