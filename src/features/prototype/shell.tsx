@@ -41,7 +41,7 @@ export function PageTitle({ children, action }: { children: ReactNode; action?: 
   );
 }
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="prototype-panel">{children}</div>;
+  return <div className="prototype-panel prototype-empty">{children}</div>;
 }
 export function NotFound() {
   return (
@@ -111,7 +111,7 @@ export function Shell() {
     </>
   );
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className={cn("min-h-screen bg-background text-foreground", !workspace && "flex flex-col")}>
       <a
         href="#main"
         className="skip-link"
@@ -279,7 +279,7 @@ export function Shell() {
               </nav>
             </div>
           </header>
-          <main id="main" ref={main} tabIndex={-1} className="outline-none">
+          <main id="main" ref={main} tabIndex={-1} className="flex-1 outline-none">
             {content}
           </main>
           <footer className="bg-muted/40 text-foreground shadow-[var(--gui-divider-top-shadow)]">

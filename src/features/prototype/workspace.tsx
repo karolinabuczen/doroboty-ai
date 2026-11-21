@@ -431,7 +431,11 @@ export function ApplicationsPage({ employer = false }: { employer?: boolean }) {
         </Notice>
       )}
       <Field label={employer ? "Szukaj kandydata lub oferty" : "Szukaj oferty"}>
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input
+          value={query}
+          placeholder={employer ? "Wpisz nazwę kandydata lub oferty" : "Wpisz nazwę oferty"}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       </Field>
       <div className="mt-6 space-y-4">
         {applications.length ? (

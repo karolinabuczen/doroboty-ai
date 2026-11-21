@@ -8,6 +8,7 @@ import { publishedJobs } from "./model";
 import { cn } from "@/lib/utils";
 
 import peopleArt from "../../../docs/design-system/agent-kit/assets/people.png";
+import heroDragon from "../../assets/hero-dragon.webp";
 
 const categories = [
   {
@@ -40,7 +41,8 @@ export default function HomePage() {
               Dobra robota. Z AI w środku.
             </Badge>
             <h1 className="mt-6 max-w-4xl text-5xl leading-[var(--gui-leading-xxl)] font-semibold tracking-[var(--gui-tracking-xs)] sm:text-6xl lg:text-7xl">
-              Praca dla ludzi, którzy dowożą z AI.
+              <span className="realm-off">Praca dla ludzi, którzy dowożą z AI.</span>
+              <span className="realm-on">Zostań bohaterem własnej historii z pomocą AI</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
               Wyselekcjonowane role, w których AI jest częścią odpowiedzialności, decyzji i wyniku
@@ -58,7 +60,8 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <img className="people-art" src={peopleArt} alt="Dwie osoby pracujące razem z laptopem" />
+          <img className="people-art realm-off" src={peopleArt} alt="Dwie osoby pracujące razem z laptopem" />
+          <img className="realm-on hero-dragon" src={heroDragon} alt="Łuczniczka, czarodziej, rycerz i krasnolud walczą ze smokiem" />
         </div>
       </section>
 
