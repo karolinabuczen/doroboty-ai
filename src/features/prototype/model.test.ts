@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { initialState, transition, stateSchema, checkPortfolioFile, type State } from "./model";
+import {
+  applicationsForPortfolioItem,
+  initialState,
+  portfolioForApplication,
+  transition,
+  stateSchema,
+  checkPortfolioFile,
+  type State,
+} from "./model";
 import { checkPortfolioUrl } from "./portfolio-links";
 const time = "2026-11-03T10:00:00.000Z";
 function as(state: State, id: string) {
@@ -174,6 +182,51 @@ describe("candidate portfolio", () => {
     const { portfolio, ...legacy } = blank();
     expect(portfolio).toEqual([]);
     expect(stateSchema.parse(legacy).portfolio).toEqual([]);
+  });
+  it("attaches chosen portfolio items to an application and lists them both ways", () => {
+    const s = as(initialState(), "candidate-anna");
+    const [first, second] = s.portfolio.filter((x) => x.candidateId === "candidate-anna");
+    const next = transition(
+      s,
+      {
+        type: "submit",
+        jobId: s.jobs[0].id,
+        notes: "",
+        generated: "",
+        answer: "Approved application with sufficient context.",
+        consent: true,
+        portfolioItemIds: [first.id, first.id],
+      },
+      time,
+      "application-anna",
+    );
+    const application = next.applications.find((x) => x.id === "application-anna")!;
+    expect(application.portfolioItemIds).toEqual([first.id]);
+    expect(portfolioForApplication(next, application).map((x) => x.id)).toEqual([first.id]);
+    expect(applicationsForPortfolioItem(next, first.id).map((x) => x.id)).toEqual([
+      "application-anna",
+    ]);
+    expect(applicationsForPortfolioItem(next, second.id)).toEqual([]);
+  });
+  it("rejects attaching items that are not the candidate's own", () => {
+    const s = as(initialState(), "candidate-marek");
+    const annaItem = s.portfolio.find((x) => x.candidateId === "candidate-anna")!;
+    expect(() =>
+      transition(s, {
+        type: "submit",
+        jobId: s.jobs[0].id,
+        notes: "",
+        generated: "",
+        answer: "Approved application with sufficient context.",
+        consent: true,
+        portfolioItemIds: [annaItem.id],
+      }),
+    ).toThrow();
+  });
+  it("loads applications saved before attachments existed as having none", () => {
+    const saved = JSON.parse(JSON.stringify(initialState()));
+    delete saved.applications[0].portfolioItemIds;
+    expect(stateSchema.parse(saved).applications[0].portfolioItemIds).toEqual([]);
   });
   it("seeds Anna Kowalska with valid examples of different types", () => {
     const items = initialState().portfolio.filter((x) => x.candidateId === "candidate-anna");
