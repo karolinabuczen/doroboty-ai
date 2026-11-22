@@ -2,6 +2,7 @@ import { z } from "zod";
 import marketplace from "./data/marketplace.json" with { type: "json" };
 import people from "./data/people.json" with { type: "json" };
 import type { JobWithCompany } from "@/features/jobs/types";
+import { checkPortfolioUrl } from "./portfolio-links";
 
 const id = z
   .string()
@@ -73,6 +74,171 @@ const personSchema = profileSchema.extend({
   exampleScore: z.number().int().min(0).max(100),
   exampleSummary: text,
 });
+// To add a portfolio type, add it to portfolioTypes and to portfolioTypeConfig below.
+export const portfolioTypes = [
+  "repository",
+  "application",
+  "video",
+  "contribution",
+  "agent_chat",
+] as const;
+export type PortfolioType = (typeof portfolioTypes)[number];
+export const portfolioTypeConfig: Record<
+  PortfolioType,
+  {
+    label: string;
+    titleLabel: string;
+    titlePlaceholder: string;
+    urlLabel: string;
+    urlPlaceholder: string;
+    notesLabel: string;
+    notesPlaceholder: string;
+    fileKind?: PortfolioFileKind;
+  }
+> = {
+  repository: {
+    label: "Repozytorium",
+    titleLabel: "Nazwa projektu",
+    titlePlaceholder: "np. Asystent obsługi zgłoszeń",
+    urlLabel: "Link do repozytorium",
+    urlPlaceholder: "https://github.com/...",
+    notesLabel: "Notatki",
+    notesPlaceholder: "Co robi projekt i jaka była Twoja rola?",
+  },
+  application: {
+    label: "Link do działającej aplikacji",
+    titleLabel: "Nazwa aplikacji",
+    titlePlaceholder: "np. Planer podróży z AI",
+    urlLabel: "Link do aplikacji",
+    urlPlaceholder: "https://...",
+    notesLabel: "Notatki",
+    notesPlaceholder: "Dla kogo jest aplikacja i jak jej używać?",
+  },
+  video: {
+    label: "Wideo (nagranie ekranu lub demo)",
+    titleLabel: "Tytuł nagrania",
+    titlePlaceholder: "np. Demo agenta w akcji",
+    urlLabel: "Link do wideo",
+    urlPlaceholder: "https://...",
+    notesLabel: "Notatki",
+    notesPlaceholder: "Co widać na nagraniu i które minuty są najważniejsze?",
+    fileKind: "video",
+  },
+  contribution: {
+    label: "Wkład w publiczne repozytoria open source (link)",
+    titleLabel: "Tytuł wkładu",
+    titlePlaceholder: "np. Poprawka błędu w bibliotece X",
+    urlLabel: "Link do wkładu",
+    urlPlaceholder: "https://github.com/.../pull/123",
+    notesLabel: "Notatki",
+    notesPlaceholder: "Jaki problem rozwiązałeś/aś i czy zmiana została przyjęta?",
+  },
+  agent_chat: {
+    label: "Nagrana rozmowa z agentem",
+    titleLabel: "Temat rozmowy",
+    titlePlaceholder: "np. Budowa funkcji z agentem kodującym",
+    urlLabel: "Link do rozmowy lub nagrania",
+    urlPlaceholder: "https://...",
+    notesLabel: "Notatki",
+    notesPlaceholder: "Jaki był cel i jak sprawdzałeś/aś odpowiedzi agenta?",
+    fileKind: "text",
+  },
+};
+export const portfolioTypeLabels = Object.fromEntries(
+  portfolioTypes.map((t) => [t, portfolioTypeConfig[t].label]),
+) as Record<PortfolioType, string>;
+// Files are kept in IndexedDB (see portfolio-files.ts); the saved state only holds this metadata.
+export const PORTFOLIO_TEXT_MAX_BYTES = 1024 * 1024;
+export const PORTFOLIO_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+const fileKinds = {
+  video: {
+    accept: ".mp4,.webm,.mov",
+    max: PORTFOLIO_VIDEO_MAX_BYTES,
+    types: { mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" },
+    unsupported: "Dla wideo dodaj plik .mp4, .webm lub .mov.",
+    tooLarge: "Plik wideo moze miec maksymalnie 50 MB.",
+  },
+  text: {
+    accept: ".txt,.md,.json",
+    max: PORTFOLIO_TEXT_MAX_BYTES,
+    types: { txt: "text/plain", md: "text/markdown", json: "application/json" },
+    unsupported: "Dla rozmowy dodaj plik tekstowy: .txt, .md lub .json.",
+    tooLarge: "Plik tekstowy moze miec maksymalnie 1 MB.",
+  },
+} as const;
+export type PortfolioFileKind = keyof typeof fileKinds;
+export const portfolioFileKinds = fileKinds;
+export const portfolioMimeTypes = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "text/plain",
+  "text/markdown",
+  "application/json",
+] as const;
+export type PortfolioMime = (typeof portfolioMimeTypes)[number];
+const mimeKind = (mime: PortfolioMime): PortfolioFileKind =>
+  mime.startsWith("video/") ? "video" : "text";
+// Returns a Polish error message, or the normalized MIME type when the file fits the kind.
+export function checkPortfolioFile(
+  file: { name: string; type: string; size: number },
+  kind: PortfolioFileKind,
+): { error: string } | { mimeType: PortfolioMime } {
+  const rules = fileKinds[kind];
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const mimeType = (rules.types as Record<string, PortfolioMime>)[extension];
+  const declaredOk =
+    !file.type ||
+    file.type === "application/octet-stream" ||
+    file.type.split("/")[0] === mimeType?.split("/")[0] ||
+    file.type === mimeType;
+  if (!mimeType || !declaredOk) return { error: rules.unsupported };
+  if (file.size === 0) return { error: "Plik jest pusty." };
+  if (file.size > rules.max) return { error: rules.tooLarge };
+  return { mimeType };
+}
+const portfolioFileSchema = z.object({
+  id,
+  name: shortText,
+  mimeType: z.enum(portfolioMimeTypes),
+  size: z.number().int().positive().max(PORTFOLIO_VIDEO_MAX_BYTES),
+});
+const portfolioUrl = z.string().trim().max(500);
+const portfolioFields = z.object({
+  title: shortText,
+  type: z.enum(portfolioTypes),
+  url: portfolioUrl,
+  file: portfolioFileSchema.optional(),
+  description: text.max(1000),
+});
+function portfolioRules(
+  item: z.infer<typeof portfolioFields>,
+  ctx: {
+    addIssue: (issue: { code: "custom"; path: string[]; message: string }) => void;
+  },
+) {
+  const config = portfolioTypeConfig[item.type];
+  if (item.url) {
+    const checked = checkPortfolioUrl(item.type, item.url);
+    if ("error" in checked) ctx.addIssue({ code: "custom", path: ["url"], message: checked.error });
+  }
+  if (item.file && (!config.fileKind || mimeKind(item.file.mimeType) !== config.fileKind))
+    ctx.addIssue({
+      code: "custom",
+      path: ["file"],
+      message: "Ten rodzaj pracy nie przyjmuje plików.",
+    });
+  if (!item.url && !item.file)
+    ctx.addIssue({
+      code: "custom",
+      path: ["url"],
+      message: config.fileKind ? "Podaj link albo dodaj plik." : "Podaj adres URL.",
+    });
+}
+export const portfolioItemSchema = portfolioFields.superRefine(portfolioRules);
+const storedPortfolioItemSchema = portfolioFields
+  .extend({ id, candidateId: id })
+  .superRefine(portfolioRules);
 export const stages = [
   "submitted",
   "reviewed",
@@ -140,6 +306,16 @@ export const stateSchema = z
     applications: z.array(applicationSchema).max(2000),
     saved: z.array(z.object({ candidateId: id, jobId: id })).max(5000),
     drafts: z.array(draftSchema).max(1000),
+    portfolio: z
+      .preprocess(
+        // Drop saved items that no longer pass the link rules instead of failing the whole state.
+        (items) =>
+          Array.isArray(items)
+            ? items.filter((x) => storedPortfolioItemSchema.safeParse(x).success)
+            : items,
+        z.array(storedPortfolioItemSchema).max(500),
+      )
+      .default([]),
   })
   .superRefine((s, ctx) => {
     const problem = (message: string) => ctx.addIssue({ code: "custom", message });
@@ -194,13 +370,15 @@ export const stateSchema = z
       }
     }
   });
-export type State = z.infer<typeof stateSchema>;
+export type State = z.output<typeof stateSchema>;
 export type Person = State["people"][number];
 export type Application = State["applications"][number];
 export type Action =
   | { type: "select_person"; id: string | null }
   | { type: "profile"; value: z.infer<typeof profileSchema> }
   | { type: "toggle_saved"; jobId: string }
+  | { type: "portfolio_add"; value: z.input<typeof portfolioItemSchema> }
+  | { type: "portfolio_remove"; id: string }
   | { type: "draft"; jobId: string; notes: string; generated: string; answer: string }
   | {
       type: "submit";
@@ -224,6 +402,42 @@ export function initialState(): State {
     applications: [],
     saved: [],
     drafts: [],
+    portfolio: [
+      {
+        id: "portfolio-anna-1",
+        candidateId: "candidate-anna",
+        type: "repository",
+        title: "Asystent do klasyfikacji zgłoszeń",
+        url: "https://github.com/example-anna/ticket-triage-assistant",
+        description:
+          "Prototyp asystenta AI, który wstępnie kategoryzuje zgłoszenia operacyjne. Dane testowe są syntetyczne.",
+      },
+      {
+        id: "portfolio-anna-2",
+        candidateId: "candidate-anna",
+        type: "video",
+        title: "Demo prototypu w 3 minuty",
+        url: "https://www.youtube.com/watch?v=demo-anna-triage",
+        description:
+          "Nagranie ekranu: od zgłoszenia do propozycji odpowiedzi i ręcznej akceptacji.",
+      },
+      {
+        id: "portfolio-anna-3",
+        candidateId: "candidate-anna",
+        type: "contribution",
+        title: "Poprawka dokumentacji biblioteki open source",
+        url: "https://github.com/example-org/open-docs/pull/42",
+        description: "Uzupełniłam przykład użycia i opisałam ograniczenia modelu językowego.",
+      },
+      {
+        id: "portfolio-anna-4",
+        candidateId: "candidate-anna",
+        type: "agent_chat",
+        title: "Rozmowa z agentem: projekt kryteriów akceptacji",
+        url: "https://example.com/rozmowy/kryteria-akceptacji",
+        description: "Pokazuje, jak doprecyzowuję polecenia i weryfikuję odpowiedzi agenta.",
+      },
+    ],
   });
   const bob = state.people.find((x) => x.id === "candidate-marek")!;
   const job = state.jobs[0];
@@ -286,6 +500,14 @@ export function transition(
     const index = s.saved.findIndex((x) => x.candidateId === p.id && x.jobId === action.jobId);
     if (index >= 0) s.saved.splice(index, 1);
     else s.saved.push({ candidateId: p.id, jobId: action.jobId });
+  } else if (action.type === "portfolio_add") {
+    const p = candidate();
+    s.portfolio.push({ id: newId, candidateId: p.id, ...portfolioItemSchema.parse(action.value) });
+  } else if (action.type === "portfolio_remove") {
+    const p = candidate();
+    const index = s.portfolio.findIndex((x) => x.id === action.id && x.candidateId === p.id);
+    if (index < 0) fail("Nie znaleziono elementu portfolio.");
+    s.portfolio.splice(index, 1);
   } else if (action.type === "draft") {
     const p = candidate();
     const draft = draftSchema.parse({ candidateId: p.id, ...action });
