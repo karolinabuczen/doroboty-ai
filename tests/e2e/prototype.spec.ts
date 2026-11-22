@@ -76,9 +76,9 @@ for (const [name, filename] of [
     await choose(page, "Karolina Wiśniewska");
     await page.goto(`/#/app/kandydaci/${id}`);
     await page.reload();
-    await expect(downloadLink).toHaveCount(0);
-    await page.getByRole("tab", { name: "CV", exact: true }).click();
     await expect(downloadLink).toHaveAttribute("href", href!);
+    await page.getByRole("tab", { name: "CV", exact: true }).click();
+    await expect(downloadLink.first()).toHaveAttribute("href", href!);
     await page.screenshot({ path: `artifacts/${filename}-employer-desktop.png`, fullPage: true });
     expect(external).toEqual([]);
   });
@@ -299,11 +299,17 @@ test("mobile navigation, light-only appearance and keyboard person selection", a
 const REALM_THEME_AXE_SKIP = ["color-contrast"];
 test("core screens have no serious accessibility violations", async ({ page }) => {
   await page.goto("/#/oferty");
-  let results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).disableRules(REALM_THEME_AXE_SKIP).analyze();
+  let results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(REALM_THEME_AXE_SKIP)
+    .analyze();
   expect(results.violations).toEqual([]);
   await choose(page, "Anna Kowalska");
   await page.goto("/#/app/profil");
-  results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).disableRules(REALM_THEME_AXE_SKIP).analyze();
+  results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(REALM_THEME_AXE_SKIP)
+    .analyze();
   expect(results.violations).toEqual([]);
 });
 
@@ -700,7 +706,9 @@ test("process sheet keeps notes across keyboard tabs and saves stage history wit
   ).toBeVisible();
   await expect(page.getByText("Wynik przykładowy", { exact: true })).toHaveCount(0);
   await expect(page.locator("iframe[title='Podgląd CV (PDF)']")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Pobierz CV (PDF)", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("tabpanel").getByRole("link", { name: "Pobierz CV (PDF)", exact: true }),
+  ).toHaveCount(0);
   const text = "Dopytać o decyzje dotyczące automatyzacji obsługi.";
   await note.fill(text);
   const answer = page.getByRole("tab", { name: "Odpowiedź", exact: true });
@@ -718,10 +726,9 @@ test("process sheet keeps notes across keyboard tabs and saves stage history wit
   ).toBe(true);
   await page.setViewportSize({ width: 1280, height: 1000 });
   await expect(note).toHaveValue(text);
-  await expect(page.getByRole("link", { name: "Pobierz CV (PDF)", exact: true })).toHaveAttribute(
-    "href",
-    /^\.?\/cv\/marek-nowak-cv-v1\.pdf$/,
-  );
+  await expect(
+    page.getByRole("tabpanel").getByRole("link", { name: "Pobierz CV (PDF)", exact: true }),
+  ).toHaveAttribute("href", /^\.?\/cv\/marek-nowak-cv-v1\.pdf$/);
   await page.keyboard.press("Home");
   await expect(answer).toBeFocused();
   await expect(page.getByRole("tabpanel", { name: "Odpowiedź", exact: true })).toContainText(
@@ -729,7 +736,9 @@ test("process sheet keeps notes across keyboard tabs and saves stage history wit
   );
   await expect(note).toHaveValue(text);
   await expect(preview).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Pobierz CV (PDF)", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("tabpanel").getByRole("link", { name: "Pobierz CV (PDF)", exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "W przeglądzie", exact: true }).click();
   await expect(page.locator(".record-stage")).toBeFocused();
   await expect(note).toHaveValue("");
@@ -742,7 +751,10 @@ test("process sheet keeps notes across keyboard tabs and saves stage history wit
   await expect(note).toHaveCount(0);
   await expect(page.locator(".record-actions")).toHaveCount(0);
   await expect(page.locator(".process-timeline li")).toHaveCount(3);
-  const accessibility = await new AxeBuilder({ page }).include(".recruiting-record").disableRules(REALM_THEME_AXE_SKIP).analyze();
+  const accessibility = await new AxeBuilder({ page })
+    .include(".recruiting-record")
+    .disableRules(REALM_THEME_AXE_SKIP)
+    .analyze();
   expect(accessibility.violations).toEqual([]);
   await choose(page, "Marek Nowak");
   await page.goto("/#/app/aplikacje/application-example");
@@ -769,12 +781,20 @@ test("process sheet renders custom snapshots and long content on narrow screens"
   await page.reload();
   await choose(page, "Karolina Wiśniewska");
   await page.goto("/#/app/kandydaci/application-example");
-  await expect(page.getByText("Zapisana treść CV", { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Pobierz CV (PDF)", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("tabpanel").getByText("Zapisana treść CV", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("tabpanel").getByRole("link", { name: "Pobierz CV (PDF)", exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("tab", { name: "CV", exact: true }).click();
-  await expect(page.getByText("Zapisana treść CV", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("tabpanel").getByText("Zapisana treść CV", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator("iframe[title='Podgląd CV (PDF)']")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Pobierz CV (PDF)", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("tabpanel").getByRole("link", { name: "Pobierz CV (PDF)", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByRole("tabpanel", { name: "CV", exact: true })).toContainText(record.cv);
   for (const width of [1280, 951, 950, 768, 767, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
@@ -1014,7 +1034,10 @@ test("candidate record shares snapshot tabs while excluding employer notes and m
   await expect(page.locator(".record-stage")).toBeFocused();
   await expect(trigger).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("Aplikacja została wycofana.");
-  const accessibility = await new AxeBuilder({ page }).include(".recruiting-record").disableRules(REALM_THEME_AXE_SKIP).analyze();
+  const accessibility = await new AxeBuilder({ page })
+    .include(".recruiting-record")
+    .disableRules(REALM_THEME_AXE_SKIP)
+    .analyze();
   expect(accessibility.violations).toEqual([]);
   await page.reload();
   await expect(page.locator(".record-stage")).toHaveText("Wycofana");
