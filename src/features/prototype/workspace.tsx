@@ -10,7 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { JobCard } from "@/features/jobs/job-card";
 import { ApplicationOfferPreview } from "@/features/jobs/application-offer-preview";
 import { usePrototype } from "./store";
-import { currentPerson, publishedJobs, stageLabels, MIN_APPLICATION_ANSWER_LENGTH } from "./model";
+import {
+  currentPerson,
+  portfolioTypeLabels,
+  publishedJobs,
+  stageLabels,
+  MIN_APPLICATION_ANSWER_LENGTH,
+} from "./model";
 import { PageTitle, Empty, NotFound, Notice } from "./shell";
 import { CvAttachment } from "./cv-attachment";
 import { MatchScore } from "./match-score";
@@ -236,6 +242,11 @@ export function ApplyPage() {
   const navigate = useNavigate();
   const job = publishedJobs(state).find((x) => x.slug === slug);
   const draft = state.drafts.find((x) => x.jobId === job?.id && x.candidateId === person.id);
+  const portfolio = state.portfolio.filter((x) => x.candidateId === person.id);
+  const hasPortfolio = portfolio.length > 0;
+  // Everything is attached by default; the candidate opts items out per application.
+  const [detached, setDetached] = useState<string[]>([]);
+  const attachedIds = portfolio.filter((x) => !detached.includes(x.id)).map((x) => x.id);
   const notes = draft?.notes ?? "";
   const generated = draft?.generated ?? "";
   const [answer, setAnswer] = useState(draft?.answer ?? "");
@@ -281,7 +292,17 @@ export function ApplyPage() {
       document.getElementById("application-consent")?.focus();
       return;
     }
-    if (run({ type: "submit", jobId: job!.id, notes, generated, answer, consent })) {
+    if (
+      run({
+        type: "submit",
+        jobId: job!.id,
+        notes,
+        generated,
+        answer,
+        consent,
+        portfolioItemIds: attachedIds,
+      })
+    ) {
       submittedOnce.current = true;
       setSubmitted(true);
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -352,6 +373,64 @@ export function ApplyPage() {
                 : `Minimum ${MIN_APPLICATION_ANSWER_LENGTH} znaków. Obecnie: ${answerLength}.`}
             </p>
           </section>
+          {hasPortfolio && (
+            <fieldset
+              className="application-form-section"
+              aria-labelledby="application-portfolio-title"
+            >
+              <h3 id="application-portfolio-title">Portfolio</h3>
+              <p className="application-help">
+                Do aplikacji dołączamy wszystkie Twoje wpisy z portfolio. Odznacz te, których nie
+                chcesz pokazywać w tej aplikacji.
+              </p>
+              <ul className="mt-3 grid gap-2">
+                {portfolio.map((item) => (
+                  <li key={item.id}>
+                    <label className="application-consent">
+                      <Checkbox
+                        disabled={submitted}
+                        checked={!detached.includes(item.id)}
+                        onCheckedChange={(v) => {
+                          setDetached(
+                            v ? detached.filter((x) => x !== item.id) : [...detached, item.id],
+                          );
+                          setConsent(false);
+                        }}
+                      />
+                      <span className="[overflow-wrap:anywhere]">
+                        {item.title}{" "}
+                        <span className="text-muted-foreground">
+                          ({portfolioTypeLabels[item.type]})
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          )}
+          {!hasPortfolio && (
+            <section
+              className="application-form-section"
+              aria-labelledby="application-portfolio-title"
+            >
+              <h3 id="application-portfolio-title">Portfolio</h3>
+              <p className="application-help">Pokaż co potrafisz - pochwal się swoimi projektami</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3"
+                disabled={submitted}
+                onClick={() => {
+                  // Keep what was typed: the saved draft is restored when the candidate returns.
+                  if (run({ type: "draft", jobId: job.id, notes, generated, answer }))
+                    navigate("/app/portfolio");
+                }}
+              >
+                Dodaj portfolio
+              </Button>
+            </section>
+          )}
           <div className="application-form-section application-submit">
             <label className="application-consent">
               <Checkbox

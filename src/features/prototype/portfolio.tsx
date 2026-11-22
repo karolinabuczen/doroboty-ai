@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { ExternalLink, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -7,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormSelect } from "@/components/ui/form-select";
 import { usePrototype } from "./store";
 import {
+  applicationsForPortfolioItem,
   checkPortfolioFile,
   currentPerson,
   portfolioFileKinds,
@@ -27,6 +29,31 @@ function formatSize(bytes: number) {
   return bytes >= 1024 * 1024
     ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
     : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function AttachedApplications({ itemId }: { itemId: string }) {
+  const { state } = usePrototype();
+  const applications = applicationsForPortfolioItem(state, itemId);
+  return (
+    <div className="mb-3 text-sm">
+      <p className="text-muted-foreground">Dołączono do aplikacji:</p>
+      {applications.length ? (
+        <ul className="mt-1 grid gap-1">
+          {applications.map((application) => (
+            <li key={application.id}>
+              <Link className="underline" to={`/app/aplikacje/${application.id}`}>
+                {application.jobTitle}
+                {" – "}
+                {state.companies.find((x) => x.id === application.companyId)?.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Nie dołączono do żadnej aplikacji.</p>
+      )}
+    </div>
+  );
 }
 
 function PortfolioLink({ type, url }: { type: string; url: string }) {
@@ -250,6 +277,7 @@ export function PortfolioPage() {
                 <p className="text-sm text-muted-foreground">{portfolioTypeLabels[item.type]}</p>
                 <h2 className="my-2 text-xl">{item.title}</h2>
                 {item.description && <p className="mb-3">{item.description}</p>}
+                <AttachedApplications itemId={item.id} />
                 <div className="flex flex-wrap items-center gap-3">
                   {item.url && <PortfolioLink type={item.type} url={item.url} />}
                   {item.file && (

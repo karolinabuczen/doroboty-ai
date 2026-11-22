@@ -3,6 +3,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { initialState } from "../../src/features/prototype/model";
 import { STORAGE_KEY } from "../../src/features/prototype/storage";
 import { readFile } from "node:fs/promises";
+// Portfolio checkboxes share the form, so the approval checkbox is addressed by name.
+const consentBox = { name: "Zatwierdzam treść i przesłanie aplikacji" };
 async function choose(page: Page, name: string) {
   await page.goto("/#/auth/sign-in");
   await page.getByRole("button", { name: `Wejdź jako ${name}`, exact: true }).click();
@@ -15,7 +17,7 @@ async function application(page: Page) {
     .fill(
       "Zaprojektowałam proces automatyzacji i przeprowadziłam badania użytkowników. Wynik: krótszy czas obsługi zgłoszeń o 30%.",
     );
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", consentBox).check();
   await page.getByRole("button", { name: "Wyślij aplikację", exact: true }).click();
 }
 
@@ -65,7 +67,7 @@ for (const [name, filename] of [
     await page
       .getByLabel("Dlaczego pasujesz do tej roli?")
       .fill("Mam doświadczenie w rozwoju produktów i automatyzacji obsługi zgłoszeń.");
-    await page.getByRole("checkbox").check();
+    await page.getByRole("checkbox", consentBox).check();
     await page.getByRole("button", { name: "Wyślij aplikację", exact: true }).click();
     await page.getByRole("link", { name: "AI Operations Specialist", exact: true }).click();
     await page.getByRole("tab", { name: "CV", exact: true }).click();
@@ -131,7 +133,7 @@ test("published job → saved offer/draft → submitted application → employer
   ).toMatchObject({ notes: "", generated: "", answer: draftAnswer });
   await page.reload();
   await expect(answer).toHaveValue(draftAnswer);
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", consentBox).check();
   await page.getByRole("button", { name: "Wyślij aplikację", exact: true }).click();
   await expect(page.getByText("Aplikacja została wysłana.", { exact: false })).toBeVisible();
   await page.reload();
@@ -324,21 +326,21 @@ test("application submission explains short answers and missing approval without
   const answer = page.getByLabel("Dlaczego pasujesz do tej roli?");
   const send = page.getByRole("button", { name: "Wyślij aplikację", exact: true });
   await answer.fill("krótka odpowiedź");
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", consentBox).check();
   await expect(send).toBeEnabled();
   await send.click();
   await expect(page.getByRole("alert")).toContainText("Odpowiedź jest za krótka");
   await expect(answer).toBeFocused();
   await expect(answer).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByRole("checkbox")).toBeChecked();
+  await expect(page.getByRole("checkbox", consentBox)).toBeChecked();
   await expect(answer).toHaveValue("krótka odpowiedź");
   await answer.fill("Moje doświadczenie pasuje do odpowiedzialności opisanej w tej ofercie.");
   await send.click();
   await expect(page.getByRole("alert")).toHaveText(
     "Zatwierdź treść aplikacji i jej przesłanie pracodawcy.",
   );
-  await expect(page.getByRole("checkbox")).toBeFocused();
-  await page.getByRole("checkbox").check();
+  await expect(page.getByRole("checkbox", consentBox)).toBeFocused();
+  await page.getByRole("checkbox", consentBox).check();
   await send.click();
   await expect(page.getByText("Aplikacja została wysłana.", { exact: false })).toBeVisible();
 });
@@ -391,17 +393,16 @@ for (const width of [1440, 375]) {
       ),
     ).toBe(true);
     await answer.focus();
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("checkbox")).toBeFocused();
+    // Anna's four portfolio checkboxes sit between the answer and the approval checkbox.
+    for (let i = 0; i < 5; i++) await page.keyboard.press("Tab");
+    await expect(page.getByRole("checkbox", consentBox)).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Wyślij aplikację", exact: true })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Zapisz szkic", exact: true })).toBeFocused();
     const editedAnswer = "Moja poprawiona odpowiedź opisuje doświadczenie potrzebne w tej roli.";
     await answer.fill(editedAnswer);
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
+    for (let i = 0; i < 7; i++) await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
     await expect(page.getByRole("status")).toHaveText("Szkic został zapisany.");
     expect(
@@ -420,7 +421,7 @@ for (const width of [1440, 375]) {
       fullPage: true,
     });
     await answer.focus();
-    await page.keyboard.press("Tab");
+    for (let i = 0; i < 5; i++) await page.keyboard.press("Tab");
     await page.keyboard.press("Space");
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");
@@ -817,13 +818,13 @@ for (const width of [1280, 390]) {
     const answer = form.getByLabel("Dlaczego pasujesz do tej roli?");
     const text = "Prowadziłam badania i wdrożenie automatyzacji obsługi zgłoszeń w produkcie B2B.";
     await answer.fill(text);
-    await form.getByRole("checkbox").check();
+    await form.getByRole("checkbox", consentBox).check();
     const description = offer.locator("summary");
     await description.focus();
     await page.keyboard.press("Enter");
     await expect(offer.locator("[data-job-description]")).toBeVisible();
     await expect(answer).toHaveValue(text);
-    await expect(form.getByRole("checkbox")).toBeChecked();
+    await expect(form.getByRole("checkbox", consentBox)).toBeChecked();
     await page.keyboard.press("Enter");
     await expect(offer.locator("[data-job-description]")).toBeHidden();
     await expect(form.getByRole("region", { name: "Twoje CV", exact: true })).toContainText(
@@ -836,11 +837,69 @@ for (const width of [1280, 390]) {
     await form.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
     await page.reload();
     await expect(answer).toHaveValue(text);
-    await expect(form.getByRole("checkbox")).not.toBeChecked();
-    const accessibility = await new AxeBuilder({ page }).include(".application-page").disableRules(REALM_THEME_AXE_SKIP).analyze();
+    await expect(form.getByRole("checkbox", consentBox)).not.toBeChecked();
+    const accessibility = await new AxeBuilder({ page })
+      .include(".application-page")
+      .disableRules(REALM_THEME_AXE_SKIP)
+      .analyze();
     expect(accessibility.violations).toEqual([]);
   });
 }
+
+test("application offers a portfolio link only when the candidate has no portfolio items", async ({
+  page,
+}) => {
+  await choose(page, "Anna Kowalska");
+  await page.goto("/#/aplikuj/ai-product-manager");
+  await expect(page.getByRole("button", { name: "Dodaj portfolio", exact: true })).toHaveCount(0);
+
+  const state = initialState();
+  state.portfolio = [];
+  await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), {
+    key: STORAGE_KEY,
+    raw: JSON.stringify(state),
+  });
+  await page.reload();
+  await choose(page, "Anna Kowalska");
+  await page.goto("/#/aplikuj/ai-product-manager");
+  const form = page.getByRole("form", { name: "Twoja aplikacja", exact: true });
+  const section = form.getByRole("region", { name: "Portfolio", exact: true });
+  await expect(section).toContainText("Pokaż co potrafisz - pochwal się swoimi projektami");
+  const answer = form.getByLabel("Dlaczego pasujesz do tej roli?");
+  const text = "Odpowiedź wpisana przed przejściem do portfolio.";
+  await answer.fill(text);
+  await section.getByRole("button", { name: "Dodaj portfolio", exact: true }).click();
+  await expect(page).toHaveURL(/#\/app\/portfolio$/);
+  await page.goto("/#/aplikuj/ai-product-manager");
+  await expect(answer).toHaveValue(text);
+});
+
+test("application attaches all portfolio items by default, lets the candidate untick one, and Moje portfolio shows where each is attached", async ({
+  page,
+}) => {
+  await choose(page, "Anna Kowalska");
+  await page.goto("/#/aplikuj/ai-product-manager");
+  const form = page.getByRole("form", { name: "Twoja aplikacja", exact: true });
+  const items = form.getByRole("group", { name: "Portfolio" }).getByRole("checkbox");
+  await expect(items).toHaveCount(4);
+  for (const item of await items.all()) await expect(item).toBeChecked();
+  const unticked = items.first();
+  const label = (await unticked.evaluate((el) => el.closest("label")!.textContent!)).split(" (")[0];
+  await unticked.uncheck();
+  await form
+    .getByLabel("Dlaczego pasujesz do tej roli?")
+    .fill("Prowadziłam badania i wdrożenie automatyzacji obsługi zgłoszeń w produkcie B2B.");
+  await form.getByRole("checkbox", consentBox).check();
+  await form.getByRole("button", { name: "Wyślij aplikację", exact: true }).click();
+  await expect(page).toHaveURL(/#\/app\/aplikacje\?wyslano=1$/);
+  await page.goto("/#/app/portfolio");
+  const cards = page.getByRole("region", { name: "Twoje wpisy" }).getByRole("listitem");
+  const detachedCard = cards.filter({ hasText: label }).first();
+  await expect(detachedCard).toContainText("Nie dołączono do żadnej aplikacji.");
+  const attached = cards.filter({ hasNotText: label }).first();
+  await expect(attached).toContainText("AI Product Manager");
+  await expect(cards.filter({ hasText: "Nie dołączono do żadnej aplikacji." })).toHaveCount(1);
+});
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
   test(`submission celebrates only once after success with motion ${reducedMotion}`, async ({
@@ -861,7 +920,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     );
     await page.getByRole("button", { name: "Zapisz szkic", exact: true }).click();
     await expect(page.locator(".confetti-burst")).toHaveCount(0);
-    await page.getByRole("checkbox").check();
+    await page.getByRole("checkbox", consentBox).check();
     await page.clock.install({ time: new Date("2026-11-03T10:00:00Z") });
     await page.clock.pauseAt(new Date("2026-11-03T10:00:01Z"));
     await page.getByRole("button", { name: "Wyślij aplikację", exact: true }).click();

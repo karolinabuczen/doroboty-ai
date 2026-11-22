@@ -281,6 +281,8 @@ const applicationSchema = z.object({
   answer: text.min(MIN_APPLICATION_ANSWER_LENGTH),
   sourceNotes: text,
   generatedAnswer: text,
+  // Portfolio items attached to this application; older saved applications have none recorded.
+  portfolioItemIds: z.array(id).max(500).default([]),
   score: z.number().int().min(0).max(100),
   summary: text,
   stage: z.enum(stages),
@@ -387,6 +389,7 @@ export type Action =
       generated: string;
       answer: string;
       consent: boolean;
+      portfolioItemIds?: string[];
     }
   | { type: "stage"; applicationId: string; stage: Stage; note: string }
   | { type: "withdraw"; applicationId: string }
@@ -453,6 +456,7 @@ export function initialState(): State {
       "Pracowałem nad automatyzacją obsługi zgłoszeń. Poprowadziłem badania z użytkownikami i wdrożenie, które skróciło czas odpowiedzi o 25%. Chętnie opowiem o decyzjach i ograniczeniach tego projektu.",
     sourceNotes: "",
     generatedAnswer: "",
+    portfolioItemIds: [],
     score: bob.exampleScore,
     summary: bob.exampleSummary,
     stage: "submitted",
@@ -468,6 +472,18 @@ export function publishedJobs(state: State): JobWithCompany[] {
 }
 export function currentPerson(state: State) {
   return state.people.find((x) => x.id === state.activePersonId);
+}
+export type PortfolioItem = State["portfolio"][number];
+// Portfolio items the candidate attached to one application (items deleted since then are skipped).
+export function portfolioForApplication(state: State, application: Application): PortfolioItem[] {
+  const attached = new Set(application.portfolioItemIds);
+  return state.portfolio.filter(
+    (x) => x.candidateId === application.candidateId && attached.has(x.id),
+  );
+}
+// Applications a portfolio item is attached to.
+export function applicationsForPortfolioItem(state: State, itemId: string): Application[] {
+  return state.applications.filter((x) => x.portfolioItemIds.includes(itemId));
 }
 export function transition(
   state: State,
@@ -520,6 +536,10 @@ export function transition(
     if (!action.consent) fail("Zatwierdź treść i zgodę na przesłanie aplikacji.");
     if (s.applications.some((x) => x.candidateId === p.id && x.jobId === job.id))
       fail("Aplikacja na tę ofertę została już wysłana.");
+    const ownItems = new Set(s.portfolio.filter((x) => x.candidateId === p.id).map((x) => x.id));
+    const portfolioItemIds = [...new Set(action.portfolioItemIds ?? [])];
+    if (portfolioItemIds.some((itemId) => !ownItems.has(itemId)))
+      fail("Nie znaleziono elementu portfolio.");
     s.applications.push(
       applicationSchema.parse({
         id: newId,
@@ -532,6 +552,7 @@ export function transition(
         answer: action.answer,
         sourceNotes: action.notes,
         generatedAnswer: action.generated,
+        portfolioItemIds,
         score: p.exampleScore,
         summary: p.exampleSummary,
         stage: "submitted",
