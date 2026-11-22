@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ExternalLink, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormSelect } from "@/components/ui/form-select";
@@ -34,7 +35,7 @@ function PortfolioLink({ type, url }: { type: string; url: string }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <a
-        className="inline-flex items-center gap-1 underline"
+        className="inline-flex items-center gap-1 break-all underline"
         href={url}
         target="_blank"
         rel="noopener noreferrer"
@@ -54,6 +55,7 @@ export function PortfolioPage() {
   const [type, setType] = useState<PortfolioType | "">("");
   const [formKey, setFormKey] = useState(0);
   const [message, setMessage] = useState("");
+  const [removing, setRemoving] = useState("");
   const [problem, setProblem] = useState("");
   const [videoSource, setVideoSource] = useState<"file" | "link">("file");
   const config = type ? portfolioTypeConfig[type] : null;
@@ -234,37 +236,40 @@ export function PortfolioPage() {
             {problem}
           </p>
         )}
-        {message && <p role="status">{message}</p>}
       </form>
+      {message && (
+        <p role="status" className="mt-4">
+          {message}
+        </p>
+      )}
       <section className="mt-6" aria-label="Twoje wpisy">
         {items.length ? (
-          <ul className="grid gap-4">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4">
             {items.map((item) => (
-              <li key={item.id} className="prototype-panel">
+              <li key={item.id} className="prototype-panel min-w-0 [overflow-wrap:anywhere]">
                 <p className="text-sm text-muted-foreground">{portfolioTypeLabels[item.type]}</p>
                 <h2 className="my-2 text-xl">{item.title}</h2>
                 {item.description && <p className="mb-3">{item.description}</p>}
                 <div className="flex flex-wrap items-center gap-3">
                   {item.url && <PortfolioLink type={item.type} url={item.url} />}
                   {item.file && (
-                    <button
+                    <Button
                       type="button"
-                      className="inline-flex items-center gap-1 underline"
+                      variant="link"
+                      size="sm"
+                      className="h-auto min-w-0 whitespace-normal text-left"
                       onClick={() => void openFile(item.file!.id)}
                     >
-                      <FileText className="size-4" aria-hidden="true" />
+                      <FileText aria-hidden="true" />
                       {item.file.name} ({formatSize(item.file.size)})
-                    </button>
+                    </Button>
                   )}
                   <Button
+                    type="button"
                     variant="outline"
+                    size="sm"
                     aria-label={`Usuń: ${item.title}`}
-                    onClick={() => {
-                      if (run({ type: "portfolio_remove", id: item.id })) {
-                        if (item.file) void deletePortfolioFile(item.file.id);
-                        setMessage("Usunięto z portfolio.");
-                      }
-                    }}
+                    onClick={() => setRemoving(item.id)}
                   >
                     <Trash2 aria-hidden="true" /> Usuń
                   </Button>
@@ -278,6 +283,24 @@ export function PortfolioPage() {
           </Empty>
         )}
       </section>
+      <ConfirmDialog
+        open={removing !== ""}
+        onOpenChange={(open) => {
+          if (!open) setRemoving("");
+        }}
+        title="Usunąć wpis z portfolio?"
+        description="Wpis zostanie usunięty wraz z dodanym plikiem. Tej operacji nie można cofnąć."
+        label="Usuń"
+        pending={false}
+        onConfirm={() => {
+          const item = items.find((x) => x.id === removing);
+          if (item && run({ type: "portfolio_remove", id: item.id })) {
+            if (item.file) void deletePortfolioFile(item.file.id);
+            setMessage("Usunięto z portfolio.");
+          }
+          setRemoving("");
+        }}
+      />
     </>
   );
 }
