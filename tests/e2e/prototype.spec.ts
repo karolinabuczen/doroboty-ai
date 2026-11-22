@@ -528,7 +528,9 @@ test("restored company and public navigation keep their structure across screen 
   }
   await page.goto("/#/oferty");
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Dobra robota.");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Zostań bohaterem własnej historii z pomocą AI",
+  );
   await expect(page.getByRole("textbox", { name: "Szukaj ofert", exact: true })).toBeVisible();
   await expect(page.locator("[data-job-page-summary]")).toHaveText("Oferty 1–6 z 6");
   await page.screenshot({ path: "artifacts/original-list-layout-desktop.png", fullPage: true });
