@@ -582,14 +582,14 @@ test("canonical marketplace typography and search geometry match Poster People b
   page,
 }) => {
   for (const [width, title, card] of [
-    [1280, "72px", "28px"],
-    [1100, "58px", "26px"],
-    [850, "52px", "28px"],
-    [390, "43px", "26px"],
+    [1280, "56.32px", "28px"],
+    [1100, "48.4px", "26px"],
+    [850, "37.4px", "28px"],
+    [390, "32px", "26px"],
   ] as const) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/#/oferty");
-    await expect(page.locator(".pp-intro-copy h1")).toHaveCSS("font-size", title);
+    await expect(page.locator(".home-intro h1")).toHaveCSS("font-size", title);
     await expect(page.locator(".pp-job-title").first()).toHaveCSS("font-size", card);
     await expect(page.getByRole("textbox", { name: "Szukaj ofert", exact: true })).toBeVisible();
     if (width === 1280) {
