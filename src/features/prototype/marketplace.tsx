@@ -25,6 +25,7 @@ import type { JobWithCompany } from "@/features/jobs/types";
 import { usePrototype } from "./store";
 import { currentPerson, publishedJobs } from "./model";
 import { NotFound } from "./shell";
+import { IntroHero } from "./intro-hero";
 import { cn } from "@/lib/utils";
 
 function LocalMap({ jobs }: { jobs: JobWithCompany[] }) {
@@ -151,27 +152,9 @@ export function JobsPage() {
   const locations = [...new Set(all.flatMap((x) => x.locations))];
   return (
     <>
+      <IntroHero />
       <section className="pp-intro-section">
-        <div className="pp-container">
-          <div className="pp-intro-grid">
-            <div className="pp-intro-copy">
-              <h1>
-                Dobra robota.
-                <br />
-                <span>Z AI w środku.</span>
-              </h1>
-              <p>
-                Dla ludzi, którzy tworzą, wdrażają i rozwijają AI.
-                <br />
-                Znajdź rolę, w której zrobisz coś dobrego.
-              </p>
-            </div>
-            <img
-              className="pp-people-art"
-              src={peopleArt}
-              alt="Dwie osoby pracujące razem z laptopem"
-            />
-          </div>
+        <div className="pp-container pt-8">
           <form
             key={`${filters.query ?? ""}:${filters.location ?? ""}`}
             className="pp-search-form"
