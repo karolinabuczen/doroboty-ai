@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   Menu,
   ArrowUpRight,
@@ -69,7 +69,12 @@ const employerNav = [
   ["/app/organizacja", "Organizacja", Building2],
 ] as const;
 export function Shell() {
-  const { state, issue, error, clearError } = usePrototype();
+  const { state, issue, error, clearError, signOut } = usePrototype();
+  const navigate = useNavigate();
+  const logout = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
   const person = currentPerson(state);
   const { pathname } = useLocation();
   const workspace = pathname.startsWith("/app") && person;
@@ -185,9 +190,17 @@ export function Shell() {
               <Link className="nav-link" to="/oferty">
                 Wszystkie oferty
               </Link>
-              <Link className="nav-link" to="/auth/sign-in">
-                Zmień osobę
-              </Link>
+              <button
+                type="button"
+                className="nav-link"
+                onClick={() => {
+                  setMenuAt(null);
+                  void logout();
+                }}
+              >
+                <LogOut className="size-4" />
+                Wyloguj się
+              </button>
             </nav>
           </aside>
           <div className="workspace">
@@ -199,7 +212,7 @@ export function Shell() {
                     ? "Strefa pracodawcy"
                     : "Case study"}
               </span>
-              <Link to="/auth/sign-in">{person.name}</Link>
+              <span>{person.name}</span>
             </div>
             <main id="main" ref={main} tabIndex={-1} className="main-content outline-none">
               {content}
@@ -255,28 +268,29 @@ export function Shell() {
                     >
                       Moje konto
                     </Link>
-                    <Link
+                    <button
+                      type="button"
                       className={cn(
                         buttonVariants({ variant: "ghost", size: "icon" }),
                         "hidden md:inline-flex",
                       )}
-                      to="/auth/sign-in"
-                      aria-label="Zmień osobę"
-                      title="Zmień osobę"
+                      onClick={() => void logout()}
+                      aria-label="Wyloguj się"
+                      title="Wyloguj się"
                     >
                       <LogOut aria-hidden="true" />
-                    </Link>
+                    </button>
                   </div>
                 ) : (
                   <>
                     <Link
-                      to="/auth/sign-in?audience=candidate"
+                      to="/auth/sign-in"
                       className={cn(
                         buttonVariants({ variant: "outline", size: "lg" }),
                         "text-sm font-medium max-sm:min-h-10 max-sm:px-[var(--gui-space-xs)] max-sm:text-sm",
                       )}
                     >
-                      Wybierz osobę
+                      Zaloguj się
                     </Link>
                   </>
                 )}
