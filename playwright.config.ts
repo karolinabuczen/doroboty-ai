@@ -17,6 +17,6 @@ export default defineConfig({
     command: "npm run preview -- --port 3106",
     url: "http://127.0.0.1:3106",
     reuseExistingServer: false,
-    env: authServerEnv(),
+    env: { ...authServerEnv(), VITE_POSTHOG_KEY: "" },
   },
 });
