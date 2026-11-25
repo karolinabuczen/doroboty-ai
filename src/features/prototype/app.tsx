@@ -4,8 +4,8 @@ import { Shell, NotFound } from "./shell";
 import HomePage from "./home";
 import MethodologyPage from "./methodology";
 import { JobsPage, JobPage, CompanyPage } from "./marketplace";
+import { LoginPage } from "./login";
 import {
-  PersonPicker,
   RequireRole,
   WorkspaceHome,
   ProfilePage,
@@ -28,7 +28,7 @@ function AppRoutes() {
         <Route path="firmy/:slug" element={<CompanyPage />} />
         <Route path="metodologia" element={<MethodologyPage />} />
         <Route path="polityka-prywatnosci" element={<PrivacyPage />} />
-        <Route path="auth/:mode" element={<PersonPicker />} />
+        <Route path="auth/:mode" element={<LoginPage />} />
         <Route
           path="aplikuj/:slug"
           element={
@@ -150,7 +150,14 @@ function AppRoutes() {
             </RequireRole>
           }
         />
-        <Route path="app/settings" element={<SettingsPage />} />
+        <Route
+          path="app/settings"
+          element={
+            <RequireRole>
+              <SettingsPage />
+            </RequireRole>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { authServerEnv } from "./tests/e2e/auth-fixtures";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -16,5 +17,6 @@ export default defineConfig({
     command: "npm run preview -- --port 3106",
     url: "http://127.0.0.1:3106",
     reuseExistingServer: false,
+    env: authServerEnv(),
   },
 });

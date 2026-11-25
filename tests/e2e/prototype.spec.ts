@@ -3,11 +3,19 @@ import AxeBuilder from "@axe-core/playwright";
 import { initialState } from "../../src/features/prototype/model";
 import { STORAGE_KEY } from "../../src/features/prototype/storage";
 import { readFile } from "node:fs/promises";
+import { TEST_ACCOUNTS, TEST_PASSWORD } from "./auth-fixtures";
 // Portfolio checkboxes share the form, so the approval checkbox is addressed by name.
 const consentBox = { name: "Zatwierdzam treść i przesłanie aplikacji" };
+// Signs in through the real login endpoint (the session cookie is shared with the page).
 async function choose(page: Page, name: string) {
-  await page.goto("/#/auth/sign-in");
-  await page.getByRole("button", { name: `Wejdź jako ${name}`, exact: true }).click();
+  const account = TEST_ACCOUNTS.find((x) => x.name === name)!;
+  const res = await page.request.post("/api/auth/login", {
+    data: { login: account.login, password: TEST_PASSWORD },
+  });
+  expect(res.ok()).toBe(true);
+  await page.goto(account.role === "employer" ? "/#/app/oferty" : "/#/app");
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 }
 async function application(page: Page) {
   await choose(page, "Anna Kowalska");
@@ -226,7 +234,7 @@ test("invalid import preserves state, valid import replaces state, reset asks fo
       (key) => JSON.parse(localStorage.getItem(key)!).activePersonId,
       STORAGE_KEY,
     ),
-  ).toBe(null);
+  ).toBe("candidate-anna");
 });
 test("unreadable save stays untouched while the user works in memory", async ({ page }) => {
   await page.goto("/");
@@ -274,11 +282,14 @@ test("map, hash deep links and unknown records work without external requests", 
   await page.goto("/#/oferty/missing");
   await expect(page.getByRole("heading", { name: "Nie znaleziono strony" })).toBeVisible();
 });
-test("mobile navigation, light-only appearance and keyboard person selection", async ({ page }) => {
+test("mobile navigation, light-only appearance and keyboard login", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/#/auth/sign-in");
-  const anna = page.getByRole("button", { name: "Wejdź jako Anna Kowalska", exact: true });
-  await anna.focus();
+  const account = TEST_ACCOUNTS[0];
+  await page.getByLabel("Login").focus();
+  await page.keyboard.type(account.login);
+  await page.keyboard.press("Tab");
+  await page.keyboard.type(TEST_PASSWORD);
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Otwórz menu" }).click();
   await page.getByRole("link", { name: "Profil", exact: true }).click();
@@ -461,7 +472,7 @@ test("legacy dark preference keeps scenario data and renders the light interface
     key: STORAGE_KEY,
     raw: JSON.stringify(legacy),
   });
-  await page.reload();
+  await choose(page, "Anna Kowalska");
   await page.goto("/#/app/profil");
   await expect(page.getByRole("textbox", { name: "O mnie", exact: true })).toHaveValue(
     "Zachowaj mój profil",
@@ -509,9 +520,8 @@ test("Poster People offer keeps desktop conditions/actions and places them befor
   await page.setViewportSize({ width: 1440, height: 1000 });
   await nav.getByRole("link", { name: "Dla firm", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Karolina Wiśniewska", exact: true }),
+    page.getByRole("heading", { name: "Jesteś zalogowany", level: 1 }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Anna Kowalska", exact: true })).toHaveCount(0);
 });
 
 test("restored company and public navigation keep their structure across screen sizes", async ({
@@ -999,6 +1009,7 @@ test("candidate record shares snapshot tabs while excluding employer notes and m
     key: STORAGE_KEY,
     raw: JSON.stringify(state),
   });
+  await choose(page, "Marek Nowak");
   await page.goto("/#/app/aplikacje/application-example");
   await page.reload();
   await expect(
@@ -1064,6 +1075,7 @@ test("candidate snapshot supports custom CV and long content at desktop and mobi
     key: STORAGE_KEY,
     raw: JSON.stringify(state),
   });
+  await choose(page, "Marek Nowak");
   await page.goto("/#/app/aplikacje/application-example");
   await page.reload();
   await page.getByRole("tab", { name: "CV", exact: true }).click();

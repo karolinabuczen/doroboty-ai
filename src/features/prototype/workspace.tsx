@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ConfettiBurst, type ConfettiOrigin } from "@/components/confetti-burst";
 import { BackLink } from "@/components/back-link";
@@ -31,49 +31,6 @@ export function Field({ label, children }: { label: string; children: ReactNode 
     </label>
   );
 }
-export function PersonPicker() {
-  const { state, run } = usePrototype();
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const next = params.get("next");
-  const audience = params.get("audience");
-  const people =
-    audience === "candidate" || audience === "employer"
-      ? state.people.filter((person) => person.role === audience)
-      : state.people;
-  const safeNext = next && /^\/(?!\/)/.test(next) && !next.startsWith("/auth") ? next : null;
-  return (
-    <section className="prototype-section max-w-4xl">
-      <h1>Wybierz osobę</h1>
-      <p className="mt-4 mb-8 text-muted-foreground">
-        Wybierz profil, z którego chcesz korzystać w prototypie. Hasło nie jest potrzebne.
-      </p>
-      <div className="grid gap-5 sm:grid-cols-2">
-        {people.map((person) => (
-          <article key={person.id} className="prototype-panel">
-            <h2 className="text-xl">{person.name}</h2>
-            <p className="my-4 text-muted-foreground">{person.headline}</p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                run({ type: "select_person", id: person.id });
-                navigate(
-                  person.role === "candidate"
-                    ? (safeNext ?? "/app")
-                    : person.role === "employer"
-                      ? "/app/oferty"
-                      : "/app/case",
-                );
-              }}
-            >
-              Wejdź jako {person.name}
-            </Button>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
 export function RequireRole({
   role,
   children,
@@ -81,19 +38,32 @@ export function RequireRole({
   role?: "candidate" | "employer" | "operator";
   children: ReactNode;
 }) {
-  const { state } = usePrototype();
+  const { state, authReady } = usePrototype();
+  const location = useLocation();
   const person = currentPerson(state);
-  if (!person) return <PersonPicker />;
+  if (!authReady)
+    return (
+      <Empty>
+        <p role="status">Sprawdzamy sesję…</p>
+      </Empty>
+    );
+  if (!person)
+    return (
+      <Navigate
+        to={`/auth/sign-in?next=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    );
   if (role && person.role !== role)
     return (
       <Empty>
         <p className="mb-4">
           Ten widok jest dostępny dla{" "}
           {role === "candidate" ? "kandydata" : role === "employer" ? "pracodawcy" : "prowadzącego"}
-          .
+          . Twoje konto nie ma do niego dostępu.
         </p>
-        <Link className={buttonVariants({ variant: "outline" })} to="/auth/sign-in">
-          Zmień osobę
+        <Link className={buttonVariants({ variant: "outline" })} to="/app">
+          Wróć do swojego panelu
         </Link>
       </Empty>
     );

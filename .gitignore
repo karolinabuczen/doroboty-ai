@@ -7,4 +7,8 @@ artifacts/
 .DS_Store
 *.tsbuildinfo
 .env*
+!.env.example
+TEST-CREDENTIALS*.md
+*.local.md
+.vercel
 npm-debug.log*

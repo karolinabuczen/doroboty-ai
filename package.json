@@ -9,6 +9,7 @@
     "start": "npm run preview",
     "lint": "eslint --max-warnings=0 .",
     "typecheck": "tsc --noEmit",
+    "auth:seed": "node scripts/auth-seed.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
