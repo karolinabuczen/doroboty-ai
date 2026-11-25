@@ -17,6 +17,7 @@ import {
 import { EmployerJobs, EmployerJobEditor, CompanyEditor } from "./employer";
 import { SettingsPage, PrivacyPage } from "./settings";
 import { CasePage } from "./case";
+import { PortfolioPage } from "./portfolio";
 function AppRoutes() {
   return (
     <Routes>
@@ -58,6 +59,14 @@ function AppRoutes() {
           element={
             <RequireRole role="candidate">
               <ProfilePage preview />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="app/portfolio"
+          element={
+            <RequireRole role="candidate">
+              <PortfolioPage />
             </RequireRole>
           }
         />

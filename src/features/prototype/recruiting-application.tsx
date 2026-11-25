@@ -2,7 +2,11 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ApplicationRecord } from "./application-record";
+import { CvAttachment } from "./cv-attachment";
 import { nextStages, stageLabels, type Application } from "./model";
+import { ExampleTaskPlaceholder } from "./example-task-placeholder";
+import { recruiterPortfolio } from "./recruiter-materials";
+import { RecruiterPortfolio } from "./recruiter-portfolio";
 import { usePrototype } from "./store";
 
 export function RecruitingApplication({ application }: { application: Application }) {
@@ -58,6 +62,18 @@ export function RecruitingApplication({ application }: { application: Applicatio
           )
         }
       >
+        <section className="mb-8 grid gap-8" aria-label="Wszystkie materiały kandydata">
+          <h3>CV kandydata</h3>
+          <CvAttachment
+            candidateId={application.candidateId}
+            fallbackText={application.cv}
+            layout="row"
+            contextLabel="CV z momentu aplikowania"
+          />
+          {!application.cv.trim() && <p className="record-caption">Kandydat nie dołączył CV.</p>}
+          <RecruiterPortfolio items={recruiterPortfolio(state, application)} />
+          <ExampleTaskPlaceholder />
+        </section>{" "}
         {availableStages.length > 0 ? (
           <>
             <h3>

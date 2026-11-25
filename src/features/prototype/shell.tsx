@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   UserRound,
   Bookmark,
+  FolderGit2,
   FileText,
   Users,
   Building2,
@@ -57,6 +58,7 @@ export function NotFound() {
 const candidateNav = [
   ["/app", "Przegląd", LayoutDashboard],
   ["/app/profil", "Profil", UserRound],
+  ["/app/portfolio", "Moje portfolio", FolderGit2],
   ["/app/zapisane", "Zapisane oferty", Bookmark],
   ["/app/aplikacje", "Moje aplikacje", FileText],
 ] as const;
@@ -111,7 +113,9 @@ export function Shell() {
     </>
   );
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", !workspace && "flex flex-col")}>
+    <div
+      className={cn("min-h-screen bg-background text-foreground", !workspace && "flex flex-col")}
+    >
       <a
         href="#main"
         className="skip-link"
