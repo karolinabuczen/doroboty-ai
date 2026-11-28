@@ -1,11 +1,14 @@
-// Minimal PostHog (EU) page-view tracking. No SDK: no autocapture, no session replay, no cookies.
-// Events carry only the page path (no query/hash params) and the role, never names, logins or content.
+// PostHog (EU) analytics with the full posthog-js library and click autocapture.
+// Privacy guardrails: no session replay, no person profiles, text masked, and autocapture only
+// reads clicks on links and buttons, so typed values (passwords, portfolio and application text,
+// file inputs) are never captured. Visitors are identified by role only, never by name or login.
+import type { CaptureResult, PostHog } from "posthog-js";
+
 export type AnalyticsRole = "candidate" | "recruiter" | "instructor" | "anonymous";
 
 const HOST = "https://eu.i.posthog.com";
-const ID_KEY = "doroboty.analytics.id";
 
-function enabled(): string | null {
+function enabledKey(): string | null {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
   if (!key || import.meta.env.MODE === "test") return null;
   // Automated browsers (end-to-end tests) never send events.
@@ -13,17 +16,34 @@ function enabled(): string | null {
   return key;
 }
 
-function anonymousId(): string {
-  try {
-    let id = sessionStorage.getItem(ID_KEY);
-    if (!id) {
-      id = crypto.randomUUID();
-      sessionStorage.setItem(ID_KEY, id);
-    }
-    return id;
-  } catch {
-    return "anonymous";
-  }
+let client: Promise<PostHog> | null = null;
+
+function load(key: string): Promise<PostHog> {
+  client ??= import("posthog-js").then(({ default: posthog }) => {
+    posthog.init(key, {
+      api_host: HOST,
+      defaults: "2025-05-24",
+      autocapture: {
+        dom_event_allowlist: ["click"],
+        element_allowlist: ["a", "button"],
+      },
+      mask_all_text: true,
+      capture_pageview: false,
+      capture_pageleave: false,
+      disable_session_recording: true,
+      disable_surveys: true,
+      person_profiles: "never",
+      persistence: "localStorage",
+      // Hash routes can carry a return path in the query; keep only the page path.
+      before_send: (event: CaptureResult | null) => {
+        const url = event?.properties?.$current_url;
+        if (event && typeof url === "string") event.properties.$current_url = url.split("?")[0];
+        return event;
+      },
+    });
+    return posthog;
+  });
+  return client;
 }
 
 export function roleForPerson(role: string | undefined): AnalyticsRole {
@@ -33,18 +53,13 @@ export function roleForPerson(role: string | undefined): AnalyticsRole {
   return "anonymous";
 }
 
-export function track(event: string, role: AnalyticsRole, path: string): void {
-  const key = enabled();
-  if (!key) return;
-  const body = JSON.stringify({
-    api_key: key,
-    event,
-    distinct_id: anonymousId(),
-    properties: { role, path, $process_person_profile: false, $lib: "doroboty-minimal" },
-  });
-  void fetch(`${HOST}/capture/`, { method: "POST", body, keepalive: true }).catch(() => undefined);
-}
-
 export function trackPageView(role: AnalyticsRole, path: string): void {
-  track("$pageview", role, path);
+  const key = enabledKey();
+  if (!key) return;
+  void load(key)
+    .then((posthog) => {
+      posthog.register({ role });
+      posthog.capture("$pageview", { path, role });
+    })
+    .catch(() => undefined);
 }
