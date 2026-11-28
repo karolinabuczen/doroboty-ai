@@ -15,7 +15,7 @@ Set both for Production (and Preview if you test there). Never commit real value
 
 ## Analytics (PostHog, EU)
 
-Full `posthog-js` library (EU host `https://eu.i.posthog.com`). Sends page views (path + role: candidate / recruiter / instructor) and click autocapture limited to links and buttons, with text masked. Typed values (passwords, portfolio and application text, file inputs) are never captured. Session replay is off, no person profiles are created, and no name or login is sent. It stores an anonymous visitor id in the browser's local storage (no cookie). Add `VITE_POSTHOG_KEY` in Vercel, then redeploy. Tests and automated browsers never send events. Consider a short consent note for testers (see the privacy page).
+Full `posthog-js` library (EU region). Requests go through our own domain at `/ingest` (Vercel rewrites in `vercel.json`, Vite proxy in dev/preview) and are relayed to PostHog EU, so ad blockers that block the PostHog hostname no longer break it; blockers matching script patterns may still interfere. Sends page views (path + role: candidate / recruiter / instructor) and click autocapture limited to links and buttons, with text masked. Typed values (passwords, portfolio and application text, file inputs) are never captured. Session replay is off, no person profiles are created, and no name or login is sent. It stores an anonymous visitor id in the browser's local storage (no cookie). Add `VITE_POSTHOG_KEY` in Vercel, then redeploy. Tests and automated browsers never send events. Consider a short consent note for testers (see the privacy page).
 
 ## Generating accounts
 
