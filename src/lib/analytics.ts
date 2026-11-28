@@ -9,6 +9,20 @@ export type AnalyticsRole = "candidate" | "recruiter" | "instructor" | "anonymou
 // Events go through our own domain (/ingest, relayed to PostHog EU by Vercel rewrites or the Vite proxy).
 const HOST = "/ingest";
 
+// Neutral same-origin paths for the relay (mirrored in vercel.json and vite.config.ts), so common
+// blocker filter lists that match PostHog's default endpoint paths do not match our own URLs.
+const PATH_ALIASES: Array<[RegExp, string]> = [
+  [/^\/i\/v0\/e\/?/, "/c/"],
+  [/^\/e\/?/, "/c/"],
+  [/^\/array\//, "/lib/"],
+  [/^\/static\//, "/res/"],
+];
+
+function neutralPath(path = ""): string {
+  for (const [pattern, alias] of PATH_ALIASES) if (pattern.test(path)) return path.replace(pattern, alias);
+  return path;
+}
+
 function enabledKey(): string | null {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
   if (!key || import.meta.env.MODE === "test") return null;
@@ -24,6 +38,7 @@ function load(key: string): Promise<PostHog> {
     posthog.init(key, {
       api_host: HOST,
       ui_host: "https://eu.posthog.com",
+      advanced_disable_flags: true,
       defaults: "2025-05-24",
       autocapture: {
         dom_event_allowlist: ["click"],
@@ -43,7 +58,9 @@ function load(key: string): Promise<PostHog> {
         return event;
       },
     });
-    return posthog;
+    // posthog-js has no setting for endpoint paths; alias them where it builds its request URLs.
+    const endpointFor = posthog.requestRouter.endpointFor.bind(posthog.requestRouter);
+    posthog.requestRouter.endpointFor = (target, path) => endpointFor(target, neutralPath(path));    return posthog;
   });
   return client;
 }
