@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from "react-router";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router";
 import { PrototypeProvider } from "./store";
 import { Shell, NotFound } from "./shell";
 import HomePage from "./home";
@@ -18,6 +18,19 @@ import { EmployerJobs, EmployerJobEditor, CompanyEditor } from "./employer";
 import { SettingsPage, PrivacyPage } from "./settings";
 import { CasePage } from "./case";
 import { PortfolioPage } from "./portfolio";
+import { useEffect } from "react";
+import { roleForPerson, trackPageView } from "@/lib/analytics";
+import { currentPerson } from "./model";
+import { usePrototype } from "./store";
+function PageViews() {
+  const { pathname } = useLocation();
+  const { state, authReady } = usePrototype();
+  const role = roleForPerson(currentPerson(state)?.role);
+  useEffect(() => {
+    if (authReady) trackPageView(role, pathname);
+  }, [pathname, role, authReady]);
+  return null;
+}
 function AppRoutes() {
   return (
     <Routes>
@@ -167,6 +180,7 @@ export function App() {
   return (
     <PrototypeProvider>
       <HashRouter>
+        <PageViews />
         <AppRoutes />
       </HashRouter>
     </PrototypeProvider>

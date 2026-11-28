@@ -2,7 +2,7 @@
 
 This register describes the frontend-only prototype as implemented in this worktree. Source coverage is not proof of executed checks or deployment; actual results belong in docs/tasks/frontend-only.md.
 
-All application routes use the hash prefix. All personas share one local scenario in the browser. Sign-in is real and server-side (Vercel functions `/api/auth/*`); the role is read from a signed session cookie. Scenario data itself stays in browser storage, so the role gate protects screens, not stored data. Original backend behavior remains in Git history.
+All application routes use the hash prefix. All personas share one local scenario in the browser. Sign-in is real and server-side (Vercel functions `/api/auth/*`); the role is read from a signed session cookie. Scenario data itself stays in browser storage, so the role gate protects screens, not stored data. Optional PostHog (EU) page-view analytics, enabled only with `VITE_POSTHOG_KEY`, sends path and role only (`src/lib/analytics.ts`); no replay, autocapture or content. Original backend behavior remains in Git history.
 
 Stable IDs are retained, including explicit removed entries. The legacy duplicate EMP-10 has been consolidated rather than assigned an ambiguous second identity.
 

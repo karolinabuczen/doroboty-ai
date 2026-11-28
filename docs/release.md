@@ -9,7 +9,13 @@ The trial build is a static Vite app plus three Vercel serverless functions (`ap
 | `SESSION_SECRET` | Random string of at least 32 characters. Signs the session cookie. Never reuse the local one.                  |
 | `AUTH_USERS`     | JSON array of `{ "id", "login", "role", "hash" }`, one entry per account. `hash` is a salted scrypt hash only. |
 
+| `VITE_POSTHOG_KEY` | Public PostHog project key (EU). Optional: when empty or missing, analytics is off. Baked in at build time, so changing it needs a redeploy. |
+
 Set both for Production (and Preview if you test there). Never commit real values; `.env.example` shows the shape only.
+
+## Analytics (PostHog, EU)
+
+Page views only, sent to `https://eu.i.posthog.com`: page path plus role (candidate / recruiter / instructor). No session replay, no autocapture, no names, logins or content. Add `VITE_POSTHOG_KEY` in Vercel, then redeploy. Tests and automated browsers never send events.
 
 ## Generating accounts
 

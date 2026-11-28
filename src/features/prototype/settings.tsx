@@ -125,7 +125,7 @@ export function PrivacyPage() {
         </p>
         <p>
           Profile, aplikacje i ustawienia pozostają w pamięci tej przeglądarki. Aplikacja nie wysyła
-          ich do bazy, dostawcy AI ani systemu analitycznego. Plik eksportu zawiera cały lokalny
+          ich do bazy ani dostawcy AI. Jeśli włączono analitykę (PostHog, UE), wysyłane są wyłącznie wyświetlenia stron z rolą (kandydat, rekruter, prowadzący), bez nazw, loginów i treści. Plik eksportu zawiera cały lokalny
           scenariusz, w tym notatki.
         </p>
         <p>
