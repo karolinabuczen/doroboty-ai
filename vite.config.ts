@@ -27,15 +27,20 @@ function localAuthApi(mode: string): Plugin {
 
 // Same-origin relay for analytics (mirrors the rewrites in vercel.json) so blockers see no third-party host.
 const ingestProxy = {
-  "/ingest/static": {
+  "/ingest/res": {
     target: "https://eu-assets.i.posthog.com",
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/ingest/, ""),
+    rewrite: (path: string) => path.replace(/^\/ingest\/res/, "/static"),
   },
-  "/ingest/array": {
+  "/ingest/lib": {
     target: "https://eu-assets.i.posthog.com",
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/ingest/, ""),
+    rewrite: (path: string) => path.replace(/^\/ingest\/lib/, "/array"),
+  },
+  "/ingest/c": {
+    target: "https://eu.i.posthog.com",
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/ingest\/c\/?/, "/i/v0/e/"),
   },
   "/ingest": {
     target: "https://eu.i.posthog.com",
@@ -43,7 +48,6 @@ const ingestProxy = {
     rewrite: (path: string) => path.replace(/^\/ingest/, ""),
   },
 };
-
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), localAuthApi(mode)],
   server: { proxy: ingestProxy },
