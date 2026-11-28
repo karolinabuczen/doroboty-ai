@@ -6,7 +6,8 @@ import type { CaptureResult, PostHog } from "posthog-js";
 
 export type AnalyticsRole = "candidate" | "recruiter" | "instructor" | "anonymous";
 
-const HOST = "https://eu.i.posthog.com";
+// Events go through our own domain (/ingest, relayed to PostHog EU by Vercel rewrites or the Vite proxy).
+const HOST = "/ingest";
 
 function enabledKey(): string | null {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
@@ -22,6 +23,7 @@ function load(key: string): Promise<PostHog> {
   client ??= import("posthog-js").then(({ default: posthog }) => {
     posthog.init(key, {
       api_host: HOST,
+      ui_host: "https://eu.posthog.com",
       defaults: "2025-05-24",
       autocapture: {
         dom_event_allowlist: ["click"],
